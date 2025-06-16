@@ -58,18 +58,14 @@ app.get('/latest-courses', async (req, res) => {
         res.send(result);
       }) 
 
-   
-
-    app.patch('/courses/:id', async(req, res) => {
+      app.delete('/courses/:id', async(req, res) => {
     const id = req.params.id;
-    const updatedData = req.body;
     const query = { _id: new ObjectId(id) };
-    const update = {
-        $set: updatedData
-    };
-    const result = await coursesCollection.updateOne(query, update);
+    const result = await coursesCollection.deleteOne(query);
     res.send(result);
 })
+
+  
 
    
 //   app.post('/enroll', async (req, res) => {
