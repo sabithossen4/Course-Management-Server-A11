@@ -46,14 +46,12 @@ async function run() {
     res.send(course);
 });
 
+app.get('/latest-courses', async (req, res) => {
+  const result = await coursesCollection.find().sort({ createdAt: -1 }).limit(6).toArray();
+  res.send(result);
+});
 
-
- app.post('/courses', async(req,res) =>{
-        const newCourses =req.body;
-        console.log(newCourses);
-        const result = await coursesCollection.insertOne(newCourses);
-        res.send(result);
-      }) 
+ 
 
       app.delete('/courses/:id', async(req, res) => {
     const id = req.params.id;
