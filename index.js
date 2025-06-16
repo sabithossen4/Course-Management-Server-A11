@@ -65,36 +65,19 @@ app.get('/latest-courses', async (req, res) => {
     res.send(result);
 })
 
-  
-
+    app.patch('/courses/:id', async(req, res) => {
+    const id = req.params.id;
+    const updatedData = req.body;
+    const query = { _id: new ObjectId(id) };
+    const update = {
+        $set: updatedData
+    };
+    const result = await coursesCollection.updateOne(query, update);
+    res.send(result);
+})
    
-//   app.post('/enroll', async (req, res) => {
-//   const { userEmail, courseId } = req.body;
-//   const alreadyEnrolled = await enrollmentsCollection.findOne({ userEmail, courseId });
-//   if (alreadyEnrolled) {
-//     return res.status(400).send({ message: "You are already enrolled in this course." });
-//   }
-//   const result = await enrollmentsCollection.insertOne({ userEmail, courseId, enrolledAt: new Date() });
-//   res.send(result);
-// });  
+ 
 
-app.post('/enroll', async (req, res) => {
-  const { userEmail, courseId } = req.body;
-  const alreadyEnrolled = await enrollmentsCollection.findOne({ userEmail, courseId });
-  if (alreadyEnrolled) {
-    return res.status(400).send({ message: "You are already enrolled in this course." });
-  }  
-  const userEnrollmentsCount = await enrollmentsCollection.countDocuments({ userEmail });
-  if (userEnrollmentsCount >= 3) {
-    return res.status(400).send({ message: "You cannot enroll in more than 3 courses." });
-  }
-  const result = await enrollmentsCollection.insertOne({ userEmail, courseId, enrolledAt: new Date() });
-  await coursesCollection.updateOne(
-    { _id: new ObjectId(courseId) },
-    { $inc: { enrolledCount: 1 } }
-  );
-  res.send(result);
-});
 
 
 
