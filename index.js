@@ -99,22 +99,23 @@ app.post('/enroll', async (req, res) => {
 
 
 
-
-
-
-app.delete('/enroll/:id', async (req, res) => {
-  const id = req.params.id;
-  const enrollment = await enrollmentsCollection.findOne({ _id: new ObjectId(id) });
-  if (!enrollment) {
-    return res.status(404).send({ message: "Enrollment not found" });
-  }
-  const result = await enrollmentsCollection.deleteOne({ _id: new ObjectId(id) });
-  await coursesCollection.updateOne(
-    { _id: new ObjectId(enrollment.courseId) },
-    { $inc: { enrolledCount: -1 } }
-  );
-  res.send(result);
+app.get('/enroll/user/:email', async (req, res) => {
+  const userEmail = req.params.email;
+  const enrollments = await enrollmentsCollection.find({ userEmail }).toArray();
+  const courseIds = enrollments.map(item => new ObjectId(item.courseId));
+  const courses = await coursesCollection.find({ _id: { $in: courseIds } }).toArray(); 
+  const combined = enrollments.map(enrollment => {
+    const course = courses.find(c => c._id.toString() === enrollment.courseId);
+    return {
+      enrollmentId: enrollment._id,
+      ...course
+    }
+  });
+  res.send(combined);
 });
+
+
+
 
 
 
