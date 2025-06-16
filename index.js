@@ -115,7 +115,19 @@ app.get('/enroll/user/:email', async (req, res) => {
 });
 
 
-
+app.delete('/enroll/:id', async (req, res) => {
+  const id = req.params.id;
+  const enrollment = await enrollmentsCollection.findOne({ _id: new ObjectId(id) });
+  if (!enrollment) {
+    return res.status(404).send({ message: "Enrollment not found" });
+  }
+  const result = await enrollmentsCollection.deleteOne({ _id: new ObjectId(id) });
+  await coursesCollection.updateOne(
+    { _id: new ObjectId(enrollment.courseId) },
+    { $inc: { enrolledCount: -1 } }
+  );
+  res.send(result);
+});
 
 
 
