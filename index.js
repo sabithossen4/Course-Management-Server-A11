@@ -51,14 +51,14 @@ app.get('/latest-courses', async (req, res) => {
   res.send(result);
 });
 
- 
+ app.post('/courses', async(req,res) =>{
+        const newCourses =req.body;
+        console.log(newCourses);
+        const result = await coursesCollection.insertOne(newCourses);
+        res.send(result);
+      }) 
 
-      app.delete('/courses/:id', async(req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) };
-    const result = await coursesCollection.deleteOne(query);
-    res.send(result);
-})
+   
 
     app.patch('/courses/:id', async(req, res) => {
     const id = req.params.id;
