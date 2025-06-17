@@ -1,18 +1,25 @@
 const express = require('express')
 const cors = require('cors');
 require('dotenv').config()
+const jwt = require('jsonwebtoken')
+var admin = require("firebase-admin");
+const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString(
+  'utf-8'
+)
+var serviceAccount = JSON.parse(decoded)
+const { getAuth } = require('firebase-admin/auth')
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express()
 const port = process.env.PORT || 3000;
 
 app.use(cors());
+
 app.use(express.json());
-
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.o1uqrsp.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
-
-
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -23,14 +30,54 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+// jwt middlewares
+const verifyJWT = async (req, res, next) => {
+  const token = req?.headers?.authorization?.split(' ')[1]
+  // const token = req?.cookies?.token
+  console.log(req.headers.authorization)
+  if (!token) return res.status(401).send({ message: 'Unauthorized Access!' })
+  try {
+    const decoded = await admin.auth().verifyIdToken(token)
+    req.tokenEmail = decoded.email
+    console.log(decoded)
+    next()
+  } catch (err) {
+    console.log(err)
+    return res.status(401).send({ message: 'Unauthorized Access!' })
+  } 
+}
+
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
 
-
     const coursesCollection = client.db('courseManagement').collection('courses');
     const enrollmentsCollection = client.db('courseManagement').collection('enrollments');
+
+
+      // generate jwt
+    app.post('/jwt', (req, res) => {
+      // user hocche payload/data
+      const user = { email: req.body.email }
+
+      // token creation (payload/data encode)
+      const token = jwt.sign(user, process.env.JWT_SECRET_KEY, {
+        expiresIn: '7d',
+      })
+
+      // res
+      //   .cookie('token', token, {
+      //     httpOnly: true,
+      //     secure: false,
+      //   })
+        .send({ message: 'JWT Created Successfully!' })
+
+      // send token in response for localstorage method
+      // res.send({ token, message: 'JWT Created Successfully!' })
+    })
 
 
      app.get('/courses', async(req,res)=>{
@@ -98,8 +145,17 @@ app.post('/enroll', async (req, res) => {
 
 
 
-app.get('/enroll/user/:email', async (req, res) => {
+app.get('/enroll/user/:email', verifyJWT, async (req, res) => {
+
+   const decodedEmail = req.tokenEmail;
+
   const userEmail = req.params.email;
+  console.log('Email from JWT TOKEN---->', decodedEmail)
+      console.log('Email from Params---->', userEmail)
+
+   if (decodedEmail !== userEmail){
+        return res.status(403).send({ message: 'Forbidden Access!' })
+      }
   const enrollments = await enrollmentsCollection.find({ userEmail }).toArray();
   const courseIds = enrollments.map(item => new ObjectId(item.courseId));
   const courses = await coursesCollection.find({ _id: { $in: courseIds } }).toArray(); 
